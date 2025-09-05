@@ -1,0 +1,12 @@
+{
+    "rust-analyzer.cargo.target": "thumbv6m-none-eabi",
+    "rust-analyzer.check.allTargets": false,
+    "rust-analyzer.check.extraArgs": [
+        "--target",
+        "thumbv6m-none-eabi",
+        //"--no-default-features",
+        //"--features", "v0_2,uom,debug-rtt",
+        //"--bin",
+        //"adcp",
+    ]
+  }
