@@ -1,5 +1,9 @@
 # X500 v2 Platform
 
+## 3D Printed Components
+
+Models are in [3d print files](3d print files).
+
 ## Flight Computer
 
 The flight computer is a [HolyBro PixHawk 6C](https://docs.holybro.com/autopilot/pixhawk-6c) attached in the center of the top carbon fiber panel of the X500 v2 frame. The flight computer and the attached M10 GPS boom are oriented in the same direction as the vehicle-forward arrow silkscreened on the drone's top panel.
