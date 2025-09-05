@@ -1,0 +1,11 @@
+[Unit]
+Description=Save streamed GPS_RAW_INT data from flight computer's MAVlink interface, to provide alignment of flight computer and Pi timestamps.
+
+[Service]
+Type=simple
+User=drone
+Group=drone
+ExecStart=/home/drone/venv/bin/python3 /home/drone/mavlink_record.py
+
+[Install]
+WantedBy=default.target

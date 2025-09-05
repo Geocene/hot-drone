@@ -1,0 +1,6 @@
+#!/bin/bash
+
+sudo systemctl stop camera-capture-0
+sudo systemctl stop camera-capture-1
+sudo systemctl stop camera-fc-time
+sudo systemctl stop camera-sensors

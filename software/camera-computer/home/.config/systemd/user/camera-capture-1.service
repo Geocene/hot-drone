@@ -1,0 +1,11 @@
+[Unit]
+Description=Save raw images from camera 1, acting as synchronization server
+
+[Service]
+Type=simple
+User=drone
+Group=drone
+ExecStart=/home/drone/c.py --ordinal 1 --server
+
+[Install]
+WantedBy=default.target

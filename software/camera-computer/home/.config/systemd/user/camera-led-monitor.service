@@ -1,0 +1,11 @@
+[Unit]
+Description=Monitor capture system, show state on LED.
+
+[Service]
+Type=simple
+User=root
+Group=root
+ExecStart=/home/drone/led_monitor.py
+
+[Install]
+WantedBy=default.target

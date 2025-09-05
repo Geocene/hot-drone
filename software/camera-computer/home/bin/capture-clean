@@ -1,0 +1,12 @@
+#!/bin/bash
+
+rm -f out/*_c0.raw
+rm -f out/*_c0.txt
+rm -f out/*_c0.srggb16
+rm -f out/*_c0.json
+rm -f out/*_c1.raw
+rm -f out/*_c1.txt
+rm -f out/*_c1.json
+rm -f out/*_c1.srggb16
+rm -f out/*_sensors.dat
+rm -f out/*_fc.txt

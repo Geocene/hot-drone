@@ -1,0 +1,3 @@
+#!/bin/bash
+
+sudo ntpdate 0.us.pool.ntp.org

@@ -1,0 +1,4 @@
+#!/bin/bash
+
+sudo nmcli connection down "Wired Local"
+sudo nmcli connection up "Wired DHCP"

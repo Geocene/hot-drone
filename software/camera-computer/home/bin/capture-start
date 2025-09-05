@@ -1,0 +1,6 @@
+#!/bin/bash
+
+sudo systemctl start camera-sensors
+sudo systemctl start camera-fc-time
+sudo systemctl start camera-capture-0
+sudo systemctl start camera-capture-1

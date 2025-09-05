@@ -1,0 +1,11 @@
+[Unit]
+Description=Save raw images from camera 0
+
+[Service]
+Type=simple
+User=drone
+Group=drone
+ExecStart=/home/drone/c.py --ordinal 0
+
+[Install]
+WantedBy=default.target

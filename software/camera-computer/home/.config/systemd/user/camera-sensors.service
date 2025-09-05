@@ -1,0 +1,11 @@
+[Unit]
+Description=Save streamed accelerometer, gyroscope, synchronization messages from sensor- and USB-attached KB2040 board.
+
+[Service]
+Type=simple
+User=drone
+Group=drone
+ExecStart=/home/drone/usb_rx.py
+
+[Install]
+WantedBy=default.target
