@@ -82,4 +82,20 @@ __Hard-won lesson__: Any time you make changes to the vehicle, do an initial tes
 
 ## 3D Printed Components
 
+The camera platform is made of 3D-printed parts.
+
+Since the camera platform is mounted to the underside of the drone, it was necessary to replace the X500 V2 kit's landing gear with 3D-printed legs attached at the ends of the motor booms.
+
 Models are in [3d print files](3d%20print%20files).
+
+## Cameras
+
+The camera system consists of three [Arducam B0262 camera assemblies](https://docs.arducam.com/Raspberry-Pi-Camera/Native-camera/12MP-IMX477/#product-catalog), built around the Sony IMX477 sensor. The Arducam B0262 comes with a 90° diagonal, 75° horizontal, 56.3° vertical field of view lens.
+
+__TODO__: Consider sourcing M12 lenses with a narrower field of view (FoV) because the Arducam B0262 camera lenses have significant distortion toward the edges. One potential source: https://commonlands.com/collections/m12-lenses
+
+__TODO__: Get 22-pin, 0.5 mm pitch MIPI-CSI cables both to clean up cable routing and upgrade the MIPI-CSI interface to four lanes, which should improve readout rate and reduce rolling shutter issues.
+
+## Camera Computers
+
+A full description of the camera computers [can be found elsewhere in this repository](../../software/camera-computer/).

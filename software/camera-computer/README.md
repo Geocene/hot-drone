@@ -40,3 +40,51 @@ I started with the [raspios_lite_arm64-2024-11-19](https://downloads.raspberrypi
 * Services -> Use password authentication
 * Options -> Eject media when finished
 
+## Camera Focusing
+
+__TODO:__ Process to focus cameras, modification of camera program to mirror the figure of merit (FoM) to the console, and/or stream a tight crop of the camera over the network to a laptop.
+
+## Image Processing Pipeline
+
+We are flying three Sony IMX477 cameras connected to two Raspberry Pi 5s via their MIPI-CSI interfaces.
+
+Minimal image processing is done onboard the Raspberry Pi. In part it is to provide us the opportunity to specify and tune the processing iteratively, after the flight. And in part, there is a limited amount of computing power available on the vehicle.
+
+To the extent we have visibility on and control of the image-processing pipeline, these are the steps the image data goes through before leaving the Raspberr Pi computers:
+
+### Sensor Exposure
+
+The IMX477 is a rolling shutter device. It reads out 3040 rows at approximately the total link rate to the host computer. The MIPI-CSI cameras that came with the Arducam B0262 cameras only support two lanes, and the Raspberry Pi 5 link rate is claimed to be 900 Mbps according to `dmesg`. One image is 197,672,960 bits, one line is 65,024 bits. Assuming 25% overhead, we have about 1.44 Gbps data rate. So readout of one sensor line should take about 4.5 µs. The whole image should take 137 milliseconds.
+
+### libcamera / picamera2
+
+The sensor data is acquired by [`c.py`](home/c.py), using `libcamera` and `picamera2`.
+
+The camera configuration requested is:
+
+ * 4056 x 3040 Bayer elements, 12 bit sensor depth
+ * Transform image by flipping horizontally and vertically, effecting a 180° rotation.
+ * Raw format, SRGGB16
+ * Auto-exposure off
+ * Auto-exposure flicker detection disabled
+ * Analog gain fixed at 1.0
+ * Automatic white balance disabled
+ * White balance set to "daylight"
+ * Brightness "0.0" (normal)
+ * Contrast "1.0" (normal)
+ * Exposure time: 1.0 milliseconds
+ * Frame rate: 1 Hertz
+ * HDR mode disabled
+ * Noise reduction off
+ * Saturation "1.0" (normal)
+ * Sharpness "0.0 (no additional sharpening performed)
+
+All documentation indicates that the Bayer pattern is the same whether the readout order is normal or flipped. Experience indicates this is true. However readout order will reverse the order of the rolling shutter effect.
+
+### Filesystem
+
+The frame of raw samples is written to an SD card as "*.srggb16" files.
+
+There is a narrow strip of black pixels along the right side that need to be removed during processing.
+
+Write performance is enhanced by deleting all prior images, and then filling the filesystem with a file or files that are then deleted. This seems to clean up or defragment the filesystem and allow for the SD cards to keep up with the 24 Mbytes/camera/second data rate.
