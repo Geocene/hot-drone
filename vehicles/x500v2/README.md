@@ -15,6 +15,8 @@ Our first drone test platform is based on a [HolyBro X500 v2 "Full Kit"](https:/
 | [Remote Control Radio](#radio-control)               | HolyBro      | [RP3 ELRS Nano](https://holybro.com/collections/rc-radio-transmitter-receiver/products/elrs-receivers-series?variant=42829116047549) |
 | [Propellers](#propellers)                         | HolyBro      | [1045](https://holybro.com/collections/multicopter-kit/products/spare-parts-x500-v2-kit?variant=41591073669309) |
 
+![Our X500 vehicle's camera system](photos/x500-vehicle-camera-mess.jpg)
+
 ## Power Distribution
 
 The Power Distribution Board is used to distribute battery voltage to the four motor controllers and two [step-down ("buck") regulators I got from Amazon](https://www.amazon.com/dp/B01MQGMOKI?th=1).
