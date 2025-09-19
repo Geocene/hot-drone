@@ -5,15 +5,15 @@ Our first drone test platform is based on a [HolyBro X500 v2 "Full Kit"](https:/
 | Component                          | Manufacturer | Model                                                        |
 | ---------------------------------- | ------------ | ------------------------------------------------------------ |
 | Frame                              | HolyBro      | [X500 V2](https://holybro.com/collections/x500-kits/products/x500-v2-kits?variant=42541212008637) |
-| Flight Computer                    | HolyBro      | [Pixhawk 6C](https://holybro.com/collections/flight-controllers/products/pixhawk-6c?variant=42783569871037) |
+| [Flight Computer](#flight-computer)                    | HolyBro      | [Pixhawk 6C](https://holybro.com/collections/flight-controllers/products/pixhawk-6c?variant=42783569871037) |
 | GPS                                | HolyBro      | [M10 GPS](https://holybro.com/collections/standard-gps-module/products/m10-gps?variant=42991226192061) |
 | Motors                             | HolyBro      | [2216 KV920 XT30](https://cdn.shopify.com/s/files/1/0604/5905/7341/files/X500MotorSpec.png?v=1678791632) |
-| Electronic Speed Controllers (ESC) | HolyBro      | [BLHeli_S 20A](https://holybro.com/collections/multicopter-kit/products/spare-parts-x500-v2-kit?variant=41591074062525) |
+| [Electronic Speed Controllers (ESC)](#electronic-speed-controllers) | HolyBro      | [BLHeli_S 20A](https://holybro.com/collections/multicopter-kit/products/spare-parts-x500-v2-kit?variant=41591074062525) |
 | Power Module                       | HolyBro      | [PM02-V3-12S](https://holybro.com/collections/power-modules-pdbs/products/pm02-v3-12s-power-module) |
-| Power Distribution Board (PDB)     | HolyBro      | [PDB 60A](https://holybro.com/collections/power-distribution-board-pdb/products/power-distribution-board-pdb) |
+| [Power Distribution Board (PDB)](#power-distribution)     | HolyBro      | [PDB 60A](https://holybro.com/collections/power-distribution-board-pdb/products/power-distribution-board-pdb) |
 | Telemetry Radio                    | HolyBro      | [SiK V3 915MHz](https://holybro.com/collections/telemetry-radios/products/sik-telemetry-radio-v3) |
-| Remote Control Radio               | HolyBro      | [RP3 ELRS Nano](https://holybro.com/collections/rc-radio-transmitter-receiver/products/elrs-receivers-series?variant=42829116047549) |
-| Propellers                         | HolyBro      | [1045](https://holybro.com/collections/multicopter-kit/products/spare-parts-x500-v2-kit?variant=41591073669309) |
+| [Remote Control Radio](#radio-control)               | HolyBro      | [RP3 ELRS Nano](https://holybro.com/collections/rc-radio-transmitter-receiver/products/elrs-receivers-series?variant=42829116047549) |
+| [Propellers](#propellers)                         | HolyBro      | [1045](https://holybro.com/collections/multicopter-kit/products/spare-parts-x500-v2-kit?variant=41591073669309) |
 
 ## Power Distribution
 
