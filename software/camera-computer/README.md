@@ -4,11 +4,13 @@ The X500 V2 drone platform used two Raspberry Pi 5 computers to provide three MI
 
 ## Hardware
 
-__TODO__: Instructions for soldering battery buck regulator outputs directly to the Pi, or orient the Pis so that their USB-C power connectors are facing outward. My drone is built with the Pis oriented the same way, so that one Pi blocks the USB-C connector of the other, which necessitated soldering the regulators directly to the Pi circuit boards.
-
 Attach the [active heat sink](https://www.raspberrypi.com/products/active-cooler/) to the Raspberry Pi and connect the fan/tachometer cable to the connector on the Raspberry Pi labeled "FAN" and "J17", at the edge of the board, behind the USB type-A connectors.
 
 Attach the [RTC battery](https://www.raspberrypi.com/products/rtc-battery/) to the Raspberry Pi. I chose to peel the adhesive on the battery and stick it to the top of the Ethernet jack. Attach the battery cable to the connector labeled "BAT" and "J5". Route the cable through the fins of the heat sink to keep the cable from getting hooked by debris and whatnot.
+
+![Raspberry Pi 5 with active heat sink and RTC battery attached](photos/raspberry-pi-5-peripheral-attachment.jpg)
+
+Instructions for attaching battery buck regulator outputs is documented in the [X500 vehicle notes](../../vehicles/x500v2/README.md#regulator-modification).
 
 Install the two Raspberry Pis on the camera mount.
 
