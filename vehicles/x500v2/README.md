@@ -15,6 +15,40 @@ Our first drone test platform is based on a [HolyBro X500 v2 "Full Kit"](https:/
 | Remote Control Radio               | HolyBro      | [RP3 ELRS Nano](https://holybro.com/collections/rc-radio-transmitter-receiver/products/elrs-receivers-series?variant=42829116047549) |
 | Propellers                         | HolyBro      | [1045](https://holybro.com/collections/multicopter-kit/products/spare-parts-x500-v2-kit?variant=41591073669309) |
 
+## Power Distribution
+
+The Power Distribution Board is used to distribute battery voltage to the four motor controllers and two [step-down ("buck") regulators I got from Amazon](https://www.amazon.com/dp/B01MQGMOKI?th=1).
+
+I decided to modify the regulators, replacing the variable resistor that adjusts the output voltage with a pair of fixed resistors in series. This gives an output of about 5.1 V, which is fine for the Raspberry Pi 5, and won't change due to vibration or getting scuffed when the regulator board is handled.
+
+### Regulator Modification
+
+#### Before
+
+I used a soldering iron to pry one end of the variable resistor up off the board. Then I did the same to the other side.
+
+![Regulator, before variable resistor modification](photos/regulator-vr-mod-before.jpg)
+
+### After
+
+The two replacement resistors size 0603 (imperial) are [labeled "34C", or 22.1 kΩ](https://www.hobby-hour.com/electronics/eia96-smd-resistors.php), ideally 1% tolerance. each. Note that I tore off the trace to the left of the resistors, just to keep things tidy..
+
+![Regulator, after variable resistor modification](photos/regulator-vr-mod-after.jpg)
+
+I soldered [XT30 connectors and cables (also from Amazon)](https://www.amazon.com/dp/B09LYHHS9J?th=1) to the input and output of each regulator board.
+
+![Regulators, wired to XT30 cables](photos/regulators-wired.jpg)
+
+I also soldered a XT30 connector and cable directly to the backside of each Raspberry Pi. This is necessary because the Raspberry Pi's nominal mounting orientation on the camera blocks the USB-C power input on one of the Pis.
+
+![XT30 to Raspberry Pi 5](photos/raspberry-pi-power-connector.jpg)
+![Positive power to Raspberry Pi 5 circuit board](photos/raspberry-pi-power-joint-positive.jpg)
+![Negative power to Raspberry Pi 5 circuit board](photos/raspberry-pi-power-joint-negative.jpg)
+
+I used double-sided 3M VHB tape (included with the X500 kit) to attach the regulators to the bottom carbon fiber plate of the frame, ensuring that the cables were loose between each regulator and Raspberry Pi. I used a small tie-wrap/zip-tie to attach the cable to one of the legs of the top spider arm.
+
+![Regulator attached to vehicle frame](photos/regulator-attached.jpg)
+
 ## Flight Computer
 
 The flight computer is a [HolyBro PixHawk 6C](https://docs.holybro.com/autopilot/pixhawk-6c) attached in the center of the top carbon fiber panel of the X500 v2 frame. The flight computer and the attached M10 GPS boom are oriented in the same direction as the vehicle-forward arrow silkscreened on the drone's top panel.
