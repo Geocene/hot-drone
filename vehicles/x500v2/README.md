@@ -19,9 +19,11 @@ Our first drone test platform is based on a [HolyBro X500 v2 "Full Kit"](https:/
 
 The Power Distribution Board is used to distribute battery voltage to the four motor controllers and two [step-down ("buck") regulators I got from Amazon](https://www.amazon.com/dp/B01MQGMOKI?th=1).
 
-I decided to modify the regulators, replacing the variable resistor that adjusts the output voltage with a pair of fixed resistors in series. This gives an output of about 5.1 V, which is fine for the Raspberry Pi 5, and won't change due to vibration or getting scuffed when the regulator board is handled.
+Those regulators were chosen, despite Raspberry Pi Foundation's recommendation for 5 A of current, because in practice these Pis don't require nearly that much current. In particular, we're not attaching any USB devices, so the Pi won't need headroom to provide one or two Amps to USB-attached peripherals. The actual current demand was verified by powering a Pi performing its flight tasks, powered off a lab/bench power supply.
 
 ### Regulator Modification
+
+I decided to modify the regulators, replacing the variable resistor that adjusts the output voltage with a pair of fixed resistors in series. This gives an output of about 5.1 V, which is fine for the Raspberry Pi 5, and won't change due to vibration or getting scuffed when the regulator board is handled.
 
 #### Before
 
