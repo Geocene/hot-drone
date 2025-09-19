@@ -135,3 +135,13 @@ __TODO__: Get 22-pin, 0.5 mm pitch MIPI-CSI cables both to clean up cable routin
 ## Camera Computers
 
 A full description of the camera computers [can be found elsewhere in this repository](../../software/camera-computer/).
+
+## Propellers
+
+We initially flew with the standard X500 kit propellers, which were 10", two-blade, screw-on propellers. But we had severe vibration issues with the images from our first flight. So we bought a different set of motors which supported bolt-on propellers, attached them to the ESCs, and then got a wide selection of two- and three-bladed propellers to evaluate for their vibration spectrum. No attempt was made to balance the motors or propellers.
+
+We eventually determined that the Gemfan 8040 CL tri-blade propellers in nylon-carbon (*not* the polycarbonate variation) had the lowest-energy spectrum. But I damaged those propellers in later testing, and never got to fly an image-capture flight with them.
+
+We've since dramatically revised the camera mounting scheme, and switched from auto-focus 64MP cameras to fixed-focus 12MP cameras, and so it might be worthwhile to re-test with the stock propellers.
+
+The 2025/08/20 test flight produced dramatically better images. That flight was flown with the HQprop MQ9X4.5X3 propellers. It's hard to say for sure how much of that is the camera mount, how much is the fixed-focus cameras, how much is switching from 64MP to 12MP, and how much is the different propellers.
