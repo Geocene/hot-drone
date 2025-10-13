@@ -8,28 +8,35 @@ use core::panic;
 use core::sync::atomic::{AtomicBool, Ordering};
 use core::task::Poll;
 
-use defmt::{error, info};
+use defmt::*;
 use embassy_executor::Spawner;
 use embassy_futures::join::join;
+use embassy_rp::gpio::{self, Output};
 use embassy_rp::i2c::{Async, Error, I2c};
+use embassy_rp::pio::{self, Pio};
+use embassy_rp::pio_programs::ws2812::{PioWs2812, PioWs2812Program};
+use embassy_rp::uart::BufferedUart;
 use embassy_rp::usb::{Driver, Instance};
-use embassy_rp::{bind_interrupts, config, i2c, peripherals, uart, usb};
-use embassy_rp::peripherals::{I2C0, UART0};
+use embassy_rp::{bind_interrupts, config, i2c, peripherals, uart, usb, Peri};
+use embassy_rp::peripherals::{I2C0, I2C1};
 use embassy_sync::waitqueue::WakerRegistration;
-use embassy_time::Delay;
+use embassy_time::{Delay, Duration, Ticker, Timer};
 use embassy_usb::control::{self, OutResponse, Recipient, RequestType};
 use embassy_usb::driver::{Endpoint, EndpointError, EndpointIn};
 use embassy_usb::types::InterfaceNumber;
 use embassy_usb::{Builder, Handler};
-use icm20948_async::{Icm20948, IcmBusI2c, Init, MagDisabled};
+use icm20948_async::{Icm20948, Icm20948Config, IcmBusI2c, Init, MagDisabled};
+use mavio::io::{AsyncReceiver, EmbeddedIoAsyncReader, EmbeddedIoAsyncWriter};
+use smart_leds::colors::RED;
+use smart_leds::RGB8;
 use static_cell::StaticCell;
 
-// use {defmt_rtt as _, panic_probe as _};
+#[cfg(feature = "defmt-serial")]
 use {defmt_serial as _, panic_probe as _};
 
 // const DEVICE_INTERFACE_GUIDS:&[&str] = &["{d98ec29a-1655-11f0-bd1e-bc091bcc74fa}"];
 
-static DEBUG_UART: StaticCell<uart::Uart<UART0, uart::Blocking>> = StaticCell::new();
+// static DEBUG_UART: StaticCell<uart::Uart<'_, Blocking>> = StaticCell::new();
 
 // type SensorPipe = Pipe<NoopRawMutex, 2048>;
 // type SensorWriter<'a> = Writer<'a, NoopRawMutex, 2048>;
@@ -38,9 +45,107 @@ static DEBUG_UART: StaticCell<uart::Uart<UART0, uart::Blocking>> = StaticCell::n
 bind_interrupts!(struct Irqs {
     I2C0_IRQ => i2c::InterruptHandler<peripherals::I2C0>;
     I2C1_IRQ => i2c::InterruptHandler<peripherals::I2C1>;
-    UART0_IRQ => uart::InterruptHandler<peripherals::UART0>;
+    PIO0_IRQ_0 => pio::InterruptHandler<peripherals::PIO0>;
+    UART0_IRQ => uart::BufferedInterruptHandler<peripherals::UART0>;
+    UART1_IRQ => uart::BufferedInterruptHandler<peripherals::UART1>;
     USBCTRL_IRQ => usb::InterruptHandler<peripherals::USB>;
 });
+
+#[embassy_executor::task]
+async fn task_camera_trigger(mut pin_trigger: Output<'static>) {
+    let mut ticker = Ticker::every(Duration::from_secs(1));
+    loop {
+        pin_trigger.set_low();
+        Timer::after_micros(100).await;
+        pin_trigger.set_high();
+        ticker.next().await;
+    }
+}
+
+#[embassy_executor::task]
+async fn task_mavlink(uart: BufferedUart) {
+    let (uart_tx, uart_rx) = uart.split();
+    let uart_rx = EmbeddedIoAsyncReader::new(uart_rx);
+    let uart_tx = EmbeddedIoAsyncWriter::new(uart_tx);
+    let mut uart_receiver = AsyncReceiver::versioned(uart_rx, mavio::prelude::V2);
+    let mut uart_sender = mavio::io::AsyncSender::versioned(uart_tx, mavio::prelude::V2);
+
+    let mavlink_version = mavio::prelude::V2;
+    let system_id = 15;
+    let component_id = 42;
+    let message_id = 24;    // GPS_RAW_INT
+    let endpoint = 0;
+
+    let header = mavio::protocol::Header::builder();
+
+    let message = {};
+
+    let frame = mavio::Frame::builder()
+        .version(mavlink_version)
+        .sequence(0)
+        .system_id(system_id)
+        .component_id(component_id)
+        .message_id(message_id)
+        .payload(&[0_u8])
+        .crc_extra(0)
+        .build();
+        // .crc_extra(crc_extra)
+        // .endpoint(Endpoint::)
+    let result = uart_sender.send(&frame).await;
+
+    struct Heartbeat {
+        custom_mode: u32,
+        r#type: u8,
+        autopilot: u8,
+        base_mode: u8,
+        system_status: u8,
+        mavlink_version: u8,
+    }
+
+    // Looks to be LSB first.
+    // let timesync_111 = [
+    //     0, 0, 0, 0, 0, 0, 0, 0,
+    //     217, 136, 28, 2, 194, 4, 0, 0
+    // ];
+    // let heartbeat_0 = [
+    //     0, 0, 0, 0, // custom_mode:
+    //     2,          // type: MAV_TYPE: 2: MAV_TYPE_QUADROTOR
+    //     3,          // autopilot: MAV_AUTOPILOT: 3: MAV_AUTOPILOT_ARDUPILOTMEGA
+    //     81,         // base_mode: MAV_MODE_FLAG: 64: MAV_MODE_FLAG_MANUAL_INPUT_ENABLED + 16: MAV_MODE_FLAG_STABILIZE_ENABLED + 1: MAV_MODE_FLAG_CUSTOM_MODE_ENABLED
+    //     3,          // system_status: MAV_STATE: 3: MAV_STATE_STANDBY
+    //     3,          // mavlink_version: document mavlink version == 3 in https://github.com/mavlink/mavlink/blob/master/message_definitions/v1.0/minimal.xml
+    // ];
+
+    let mut count = 0;
+    loop {
+        if let Ok(frame) = uart_receiver.recv().await {
+            match frame.message_id() {
+                // 0 => {},
+                // 111 => {},
+                _ => info!("message {} {:?}", frame.message_id(), frame.payload().bytes()),
+            }
+        } else {
+            error!("recv");
+        }
+
+        count += 1;
+    }
+}
+
+#[embassy_executor::task]
+async fn task_accel_0(i2c: I2c<'static, I2C0, Async>, config: Icm20948Config) {
+    task_accel(i2c, config).await
+}
+
+#[embassy_executor::task]
+async fn task_accel_1(i2c: I2c<'static, I2C1, Async>, config: Icm20948Config) {
+    task_accel(i2c, config).await
+}
+
+async fn task_accel(i2c: I2c<'static, impl embassy_rp::i2c::Instance, Async>, config: Icm20948Config) {
+    let accel0 = Icm20948::new_i2c_from_cfg(i2c, config, Delay);
+    accel0.initialize_6dof().await.unwrap_or_else(|_| panic!("imu init failed"));
+}
 
 // enum SensorData {
 //     Accel(Vector3<i16>),
@@ -59,37 +164,137 @@ bind_interrupts!(struct Irqs {
 type SensorType = Icm20948<IcmBusI2c<I2c<'static, I2C0, Async>>, MagDisabled, Init, Delay, Error>;
 
 #[embassy_executor::main]
-async fn main(_spawner: Spawner) {
+async fn main(spawner: Spawner) {
     let config = config::Config::default();
     let p = embassy_rp::init(config);
 
-    let mut uart_config = uart::Config::default();
-    uart_config.baudrate = 921600;
-    let uart = uart::Uart::new_blocking(p.UART0, p.PIN_0, p.PIN_1, /*Irqs, p.DMA_CH0, p.DMA_CH1,*/ uart_config);
-    defmt_serial::defmt_serial(DEBUG_UART.init(uart));
+    ///////////////////////////////////////////////////////////////////
+    // Low-Level Peripheral Mappings
 
-    let mut i2c_config = i2c::Config::default();
-    i2c_config.frequency = 400_000;
-    let i2c = i2c::I2c::new_async(p.I2C0, p.PIN_13, p.PIN_12, Irqs, i2c_config);
-    // let i2c0_int = Input::new(p.PIN_6, Pull::None);
-    // let Ok(mut sensor) = sensor else { panic!("imu new_i2c") };
-    let sensor = Icm20948::new_i2c(i2c, Delay)
-        .gyr_unit(icm20948_async::GyrUnit::Rps)
-        .gyr_dlp(icm20948_async::GyrDlp::Disabled)
-        .gyr_odr(0)
-        .acc_unit(icm20948_async::AccUnit::Gs)
-        .acc_dlp(icm20948_async::AccDlp::Disabled)
-        .acc_range(icm20948_async::AccRange::Gs16)
-        .acc_odr(0);
-    let mut sensor = sensor.initialize_6dof().await.unwrap_or_else(|_| panic!("imu init failed"));
+    let ws2812_pio = p.PIO0;
+    let ws2812_irq = Irqs;
+    let ws2812_dma = p.DMA_CH4;
+    let ws2812_pin = p.PIN_17;
+    const WS2812_LED_COUNT: usize = 1;
+    let mut ws2812_state = [smart_leds::RGB8::default(); WS2812_LED_COUNT];
 
-/*
-    let mut i2c1_config = i2c::Config::default();
-    i2c1_config.frequency = 400_000;
-    let i2c1 = i2c::I2c::new_async(p.I2C1, p.PIN_3, p.PIN_2, Irqs, i2c1_config);
-    let i2c1_int = Input::new(p.PIN_7, Pull::None);
-*/
-    // let sync_in = Input::new(p.PIN_29, Pull::Up);
+    // Pin used to enable the 1.8 V regulator to the level shifter for the
+    // camera trigger signal.
+    let supply_1v8_enable_pin = p.PIN_3;
+
+    // Pin used to trigger the Arducam B0262 IMX477 camera modules.
+    // The B0262 circuit board has "X" (external trigger) and "G" (ground)
+    // pads that can be used, along with the appropriate `imx477` kernel module
+    // settings, to trigger the sensor to capture an image.
+    let camera_trigger_pin = p.PIN_4;
+
+    // Interface to the camera computers, used to inform the camera computers
+    // of while file name, timestamp, sequence number, or whatever should be associated
+    // by the most recently triggered image capture.
+    let logger_uart = p.UART0;
+    let logger_uart_pin_tx = p.PIN_0;
+    let logger_uart_pin_rx = p.PIN_1;
+    let logger_uart_irq = Irqs;
+    static LOGGER_UART_TX_BUF: StaticCell<[u8;  256]> = StaticCell::new();
+    static LOGGER_UART_RX_BUF: StaticCell<[u8; 1024]> = StaticCell::new();
+    let logger_uart_tx_buf = &mut LOGGER_UART_TX_BUF.init([0; _])[..];
+    let logger_uart_rx_buf = &mut LOGGER_UART_RX_BUF.init([0; _])[..];
+    let mut logger_uart_config = uart::Config::default();
+    logger_uart_config.baudrate = 921600;
+
+    let mavlink_uart = p.UART1;
+    let mavlink_uart_pin_tx = p.PIN_8;
+    let mavlink_uart_pin_rx = p.PIN_9;
+    let mavlink_uart_irq = Irqs;
+    static MAVLINK_UART_TX_BUF: StaticCell<[u8;  256]> = StaticCell::new();
+    static MAVLINK_UART_RX_BUF: StaticCell<[u8; 1024]> = StaticCell::new();
+    let mavlink_uart_tx_buf = &mut MAVLINK_UART_TX_BUF.init([0; _])[..];
+    let mavlink_uart_rx_buf = &mut MAVLINK_UART_RX_BUF.init([0; _])[..];
+    let mut mavlink_uart_config = uart::Config::default();
+    mavlink_uart_config.baudrate = 921600;
+
+    let accel_config = Icm20948Config {
+        gyr_unit: icm20948_async::GyrUnit::Rps,
+        gyr_dlp: icm20948_async::GyrDlp::Disabled,
+        gyr_odr: 0,
+        acc_unit: icm20948_async::AccUnit::Gs,
+        acc_dlp: icm20948_async::AccDlp::Disabled,
+        acc_range: icm20948_async::AccRange::Gs16,
+        acc_odr: 0,
+        ..Default::default()
+    };
+
+    let accel0_i2c = p.I2C0;
+    let accel0_i2c_scl = p.PIN_13;
+    let accel0_i2c_sda = p.PIN_12;
+    let accel0_i2c_irq = Irqs;
+    let mut accel0_i2c_config = i2c::Config::default();
+    accel0_i2c_config.frequency = 400_000;
+
+    let accel1_i2c = p.I2C1;
+    let accel1_i2c_scl = p.PIN_7;
+    let accel1_i2c_sda = p.PIN_6;
+    let accel1_i2c_irq = Irqs;
+    let mut accel1_i2c_config = i2c::Config::default();
+    accel1_i2c_config.frequency = 400_000;
+
+    ///////////////////////////////////////////////////////////////////
+    // Peripheral Configuration
+
+    #[cfg(feature = "defmt-serial")]
+    {
+        static SERIAL: StaticCell<uart::Uart<'_, embassy_rp::uart::Blocking>> = StaticCell::new();
+        let serial = uart::Uart::new_blocking(logger_uart, logger_uart_pin_tx, logger_uart_pin_rx, logger_uart_config);
+        defmt_serial::defmt_serial(SERIAL.init(serial));
+    }
+    #[cfg(not(feature = "defmt-serial"))]
+    {
+        let logger_uart = uart::BufferedUart::new(
+            logger_uart,
+            logger_uart_pin_tx, logger_uart_pin_rx,
+            logger_uart_irq,
+            logger_uart_tx_buf,
+            logger_uart_rx_buf,
+            logger_uart_config,
+        );
+        let (logger_uart_tx, logger_uart_rx) = logger_uart.split();
+        let logger_uart_rx = EmbeddedIoAsyncReader::new(logger_uart_rx);
+        let logger_uart_tx = EmbeddedIoAsyncWriter::new(logger_uart_tx);
+    }
+
+    let mut ws2812 = {
+        let Pio { mut common, sm0, .. } = Pio::new(ws2812_pio, ws2812_irq);
+        let program = PioWs2812Program::new(&mut common);
+        PioWs2812::new(&mut common, sm0, ws2812_dma, ws2812_pin, &program)
+    };
+
+    ws2812_state[0] = RED;
+    ws2812.write(&ws2812_state).await;
+
+    let camera_trigger_pin = Output::new(camera_trigger_pin, gpio::Level::High);
+    spawner.spawn(task_camera_trigger(camera_trigger_pin)).expect("spawn task_cammera_trigger");
+
+    let mavlink_uart = uart::BufferedUart::new(
+        mavlink_uart,
+        mavlink_uart_pin_tx, mavlink_uart_pin_rx,
+        mavlink_uart_irq,
+        mavlink_uart_tx_buf,
+        mavlink_uart_rx_buf,
+        mavlink_uart_config,
+    );
+    spawner.spawn(task_mavlink(mavlink_uart)).expect("spawn task_mavlink");
+
+    // let accel0_i2c = i2c::I2c::new_async(accel0_i2c, accel0_i2c_scl, accel0_i2c_sda, accel0_i2c_irq, accel0_i2c_config);
+    // spawner.spawn(task_accel_0(accel0_i2c, accel_config)).expect("spawn task_accel_0");
+
+    // let accel1_i2c = i2c::I2c::new_async(accel1_i2c, accel1_i2c_scl, accel1_i2c_sda, accel1_i2c_irq, accel1_i2c_config);
+    // spawner.spawn(task_accel_1(accel1_i2c, accel_config)).expect("spawn task_accel_1");
+
+    // let mut pwm_config = pwm::Config::default();
+    // pwm_config.top = 10000;
+    // pwm_config.divider = 133.into();
+    // let mut pwm = Pwm::new_output_a(p.PWM_SLICE2, p.PIN_4, pwm_config);
+    // pwm.set_duty_cycle(100).unwrap();
 
     // static CHANNEL: StaticCell<SensorChannel> = StaticCell::new();
     // let c = CHANNEL.init(SensorChannel::new());
@@ -147,18 +352,32 @@ async fn main(_spawner: Spawner) {
     let mut usb = builder.build();
     let usb_fut = usb.run();
 
+let mut count = 0;
+loop {
+    Timer::after_millis(333).await;
+
+    ws2812_state[0] = RGB8 {
+        r: ((count >> 0) & 1) * 255,
+        g: ((count >> 1) & 1) * 255,
+        b: ((count >> 2) & 1) * 255,
+    };
+    ws2812.write(&ws2812_state).await;
+
+    count += 1;
+}
+
     let pump_fut = async {
         loop {
             info!("pump: wait_connection");
             class.wait_connection().await;
 
-            info!("pump: pump");
-            match pump(&mut class, &mut sensor).await {
-                Ok(_) => info!("pump: finished"),
-                Err(_) => {
-                    error!("pump: error");
-                },
-            }
+            // info!("pump: pump");
+            // match pump(&mut class, &mut accel0).await {
+            //     Ok(_) => info!("pump: finished"),
+            //     Err(_) => {
+            //         error!("pump: error");
+            //     },
+            // }
     /*
                 let message = rx.receive().await;
 
@@ -395,7 +614,7 @@ impl<'d, D: embassy_usb::driver::Driver<'d>> VendorClass<'d, D> {
         let mut interface = function.interface();
         let if_num = interface.interface_number();
         let mut alt = interface.alt_setting(0xff, 0, 0, None);
-        let write_ep = alt.endpoint_bulk_in(64);
+        let write_ep = alt.endpoint_bulk_in(None, 64);
         drop(function);
 
         let control = state.control.write(Control {
