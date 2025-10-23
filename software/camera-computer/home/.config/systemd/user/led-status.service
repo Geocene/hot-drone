@@ -5,7 +5,7 @@ Description=Monitor capture system, show state on LED.
 Type=simple
 User=root
 Group=root
-ExecStart=/home/drone/led_monitor.py
+ExecStart=/usr/bin/python /home/drone/led_status.py
 
 [Install]
 WantedBy=default.target

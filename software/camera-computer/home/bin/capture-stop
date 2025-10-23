@@ -1,6 +1,5 @@
 #!/bin/bash
 
-sudo systemctl stop camera-capture-0
-sudo systemctl stop camera-capture-1
-sudo systemctl stop camera-fc-time
-sudo systemctl stop camera-sensors
+sudo systemctl stop nexus.service
+sudo systemctl stop camera.service
+sudo systemctl stop led-status.service

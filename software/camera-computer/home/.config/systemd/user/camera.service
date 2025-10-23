@@ -1,0 +1,12 @@
+[Unit]
+Description=Save raw images from camera
+After=led-status.service
+
+[Service]
+Type=simple
+User=drone
+Group=drone
+ExecStart=/usr/bin/python /home/drone/camera.py
+
+[Install]
+WantedBy=default.target
