@@ -59,7 +59,7 @@ type Receiver = embassy_sync::channel::Receiver<'static, NoopRawMutex, Message, 
 #[derive(Clone, Debug)]
 enum Message {
     Accelerometer(Instant, u8, [u8; 60]),
-    CameraTrigger(Instant),
+    CameraTrigger(Instant, usize),
     Mavlink(Instant, Vec<u8, 60>),
 }
 
@@ -91,7 +91,7 @@ async fn task_camera_trigger(mut pin_trigger: Output<'static>, uart_writer: &mut
             uart_writer.write_all(&buf).await.unwrap();
             capture_count += 1;
 
-            if let Err(_) = sender.try_send(Message::CameraTrigger(timestamp)) {
+            if let Err(_) = sender.try_send(Message::CameraTrigger(timestamp, capture_count)) {
                 error!("task_camera_trigger try_send");
             }
 
@@ -528,6 +528,7 @@ struct UsbCameraTriggerFrame {
     message: u8,
     payload_length: u8,
     timestamp: UsbTimestamp,
+    count: usize,
 }
 
 #[repr(C, packed)]
@@ -555,13 +556,14 @@ async fn pump<'d, T: Instance + 'd>(class: &mut VendorClass<'d, Driver<'d, T>>, 
                     let frame_buf: [u8; 64] = unsafe { transmute(frame) };
                     class.write_packet(&frame_buf).await?;
                 },
-                Message::CameraTrigger(instant) => {
+                Message::CameraTrigger(instant, count) => {
                     let frame = UsbCameraTriggerFrame {
                         message: UsbMessageId::CameraTrigger.into(),
                         payload_length: 0,
                         timestamp: instant.into(),
+                        count,
                     };
-                    let frame_buf: [u8; 4] = unsafe { transmute(frame) };
+                    let frame_buf: [u8; 8] = unsafe { transmute(frame) };
                     class.write_packet(&frame_buf).await?;
                 },
                 Message::Mavlink(instant, data) => {
