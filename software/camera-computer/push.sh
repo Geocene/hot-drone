@@ -1,6 +1,6 @@
 #!/bin/bash
 
-TARGET=drone@drone-3.lan
+TARGET=drone@$1.lan
 
 # pushd ../firmware/data-logger-rs
 # cargo build --release
