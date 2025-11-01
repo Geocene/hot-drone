@@ -63,6 +63,9 @@ sudo mke2fs -v -E discard -m 0 -O ^has_journal /dev/mmcblk0p3
 
 # Mount the new partition at `/home/drone/out`
 sudo mount /dev/mmcblk0p3 /home/drone/out
+
+# Correct the permissions on the mounted `/home/drone/out` node
+sudo chown drone:drone /home/drone/out
 ```
 
 Now, reboot the Pi Zero, and it should be fully functional.
