@@ -6,6 +6,7 @@ Type=simple
 User=drone
 Group=drone
 ExecStart=/usr/bin/python /home/drone/camera.py
+WorkingDirectory=/home/drone
 
 [Install]
 WantedBy=default.target

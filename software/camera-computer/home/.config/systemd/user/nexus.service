@@ -7,6 +7,7 @@ Type=simple
 User=drone
 Group=drone
 ExecStart=/usr/bin/python /home/drone/nexus.py
+WorkingDirectory=/home/drone
 
 [Install]
 WantedBy=default.target
