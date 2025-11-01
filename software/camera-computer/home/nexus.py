@@ -13,10 +13,23 @@ ENDPOINT = 1
 TRANSFER_COUNT = 32
 BUFFER_SIZE = 64
 
+is_nexus = False
+
 import platform
 pc = 'x86' in platform.platform()
 if pc:
     print(f"running on PC")
+else:
+    with usb1.USBContext() as context:
+        devices = context.getDeviceList()
+        for device in devices:
+            if device.getVendorID() == VENDOR_ID and device.getProductID() == PRODUCT_ID:
+                is_nexus = True
+        print(f"is_nexus: {is_nexus}")
+
+    if not is_nexus:
+        print(f"no nexus hardware (no KB2040 attached), so shutting down")
+        sys.exit(0)
 
 path_out = "/tmp" if pc else "/home/drone/out"
 
@@ -37,8 +50,17 @@ else:
 
 output_file_map = dict([(id, None) for id in output_map.keys()])
 
+pump = True
+
 def received_data_callback(transfer):
+    global pump
+
+    if not pump:
+        return
+
     if transfer.getStatus() != usb1.TRANSFER_COMPLETED:
+        print("transfer.getStatus did not return usb1.TRANSFER_COMPLETED", file=sys.stderr)
+        pump = False
         return
 
     data = transfer.getBuffer()[:transfer.getActualLength()]
@@ -48,7 +70,10 @@ def received_data_callback(transfer):
     payload_length = data[1]
     timestamp = data[2:4]
     payload = data[4:]
-    assert(len(payload) == payload_length)
+    if len(payload) != payload_length:
+        print(f"len(payload) {len(payload)} != payload_length {payload_length}, packet_id = {packet_id}", file=sys.stderr)
+        pump = False
+        return
 
     output_file = output_file_map.get(packet_id, None)
     if output_file is not None:
@@ -67,18 +92,29 @@ with usb1.USBContext() as context:
         raise RuntimeError("device not present")
 
     start_time = time.time()
-    filename_prefix = f"{int(start_time)}".encode()
+    filename_prefix = f"{int(start_time)}"
 
     def streaming_start():
-        handle.controlWrite(usb1.REQUEST_TYPE_VENDOR | usb1.RECIPIENT_INTERFACE, 0, 1, 0, filename_prefix)
+        handle.controlWrite(usb1.REQUEST_TYPE_VENDOR | usb1.RECIPIENT_INTERFACE, 0, 1, 0, filename_prefix.encode())
 
     def streaming_stop():
+        print("stopping streaming", file=sys.stderr)
         handle.controlWrite(usb1.REQUEST_TYPE_VENDOR | usb1.RECIPIENT_INTERFACE, 0, 0, 0, [])
 
     def shutdown(sig, frame):
-        print("shutdown")
-        streaming_stop()
-        handle.close()
+        print("shutdown", file=sys.stderr)
+        pump = False
+
+        try:
+            streaming_stop()
+        except:
+            pass
+
+        # try:
+        #     handle.close()
+        # except:
+        #     pass
+
         sys.exit(0)
 
     signal.signal(signal.SIGTERM, shutdown)
@@ -107,16 +143,22 @@ with usb1.USBContext() as context:
                 try:
                     context.handleEvents()
                 except KeyboardInterrupt:
+                    print("keyboard interrupt", file=sys.stderr)
+                    pump = False
                     break
                 except:
-                    print(repr(sys.exception()))
+                    print(f"inner exception: {repr(sys.exception())}", file=sys.stderr)
+                    pump = False
+                    break
 
         except:
-            print("exception", repr(sys.exception()))
+            print(f"outer exception: {repr(sys.exception())}", file=sys.stderr)
 
         finally:
-            print("finally")
-            streaming_stop()
+            print("outer finally", file=sys.stderr)
+            pump = False
 
-    print("exited with")
-    handle.close()
+        streaming_stop()
+
+    print("exiting", file=sys.stderr)
+    # handle.close()

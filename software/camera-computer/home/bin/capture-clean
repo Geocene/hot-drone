@@ -1,5 +1,5 @@
 #!/bin/bash
 
-rm -f out/*_c?.json
-rm -f out/*_c?.sbggr12
-rm -f out/*_nexus.dat
+sudo umount -f /home/drone/out
+sudo mke2fs -F -E discard -m 0 -O ^has_journal /dev/mmcblk0p3
+sudo mount /dev/mmcblk0p3 /home/drone/out

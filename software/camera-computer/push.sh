@@ -1,29 +1,33 @@
 #!/bin/bash
 
-TARGET=drone@drone-1
+TARGET=drone@drone-3.lan
 
-ssh $TARGET "sudo systemctl stop camera.service"
-ssh $TARGET "sudo systemctl stop led-status.service"
-ssh $TARGET "sudo systemctl stop nexus.service"
+# pushd ../firmware/data-logger-rs
+# cargo build --release
+# picotool uf2 convert target/thumbv6m-none-eabi/release/data-logger-rs -t elf kb2040.uf2 -t uf2
+# popd
 
-ssh $TARGET "sudo systemctl disable camera.service"
-ssh $TARGET "sudo systemctl disable led-status.service"
-ssh $TARGET "sudo systemctl disable nexus.service"
+ssh -4 $TARGET "sudo systemctl stop camera.service"
+ssh -4 $TARGET "sudo systemctl stop nexus.service"
 
-rsync -av home/*.py $TARGET:
-rsync -av home/*.yaml $TARGET:
-rsync -av home/bin/ $TARGET:bin/
-rsync -av home/.config/ $TARGET:.config/
-rsync -av etc/udev/rules.d/*.rules $TARGET:
+ssh -4 $TARGET "sudo systemctl disable camera.service"
+ssh -4 $TARGET "sudo systemctl disable nexus.service"
 
-ssh $TARGET "sudo mv .config/systemd/user/*.service /etc/systemd/system/"
-ssh $TARGET "sudo chown root:root /etc/systemd/system/camera.service"
-ssh $TARGET "sudo chown root:root /etc/systemd/system/led-status.service"
-ssh $TARGET "sudo chown root:root /etc/systemd/system/nexus.service"
-ssh $TARGET "sudo systemctl enable camera.service"
-ssh $TARGET "sudo systemctl enable led-status.service"
-ssh $TARGET "sudo systemctl enable nexus.service"
+# cp ../firmware/data-logger-rs/kb2040.uf2 home/
 
-ssh $TARGET "sudo mv *.rules /etc/udev/rules.d/"
-ssh $TARGET "sudo chown root:root /etc/udev/rules.d/*.rules"
-ssh $TARGET "sudo udevadm control --reload"
+rsync -av4 home/*.py $TARGET:
+rsync -av4 home/*.yaml $TARGET:
+# rsync -av4 home/*.uf2 $TARGET:
+rsync -av4 home/bin/ $TARGET:bin/
+rsync -av4 home/.config/ $TARGET:.config/
+rsync -av4 etc/udev/rules.d/*.rules $TARGET:
+
+ssh -4 $TARGET "sudo mv .config/systemd/user/*.service /etc/systemd/system/"
+ssh -4 $TARGET "sudo chown root:root /etc/systemd/system/camera.service"
+ssh -4 $TARGET "sudo chown root:root /etc/systemd/system/nexus.service"
+ssh -4 $TARGET "sudo systemctl enable camera.service"
+ssh -4 $TARGET "sudo systemctl enable nexus.service"
+
+ssh -4 $TARGET "sudo mv *.rules /etc/udev/rules.d/"
+ssh -4 $TARGET "sudo chown root:root /etc/udev/rules.d/*.rules"
+ssh -4 $TARGET "sudo udevadm control --reload"

@@ -559,7 +559,7 @@ async fn pump<'d, T: Instance + 'd>(class: &mut VendorClass<'d, Driver<'d, T>>, 
                 Message::CameraTrigger(instant, count) => {
                     let frame = UsbCameraTriggerFrame {
                         message: UsbMessageId::CameraTrigger.into(),
-                        payload_length: 0,
+                        payload_length: 4,
                         timestamp: instant.into(),
                         count,
                     };

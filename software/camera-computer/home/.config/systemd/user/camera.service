@@ -1,6 +1,5 @@
 [Unit]
 Description=Save raw images from camera
-After=led-status.service
 
 [Service]
 Type=simple
