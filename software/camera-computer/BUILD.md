@@ -263,5 +263,7 @@ Create a disk image using `dd` or the GNOME `Disks` GUI tool.
 Shrink the image with `[PiShrink](https://github.com/Drewsif/PiShrink)`:
 
 ```
-PiShrink/pishrink.sh -s -v /dev/sda
+PiShrink/pishrink.sh -s -v disk.img
 ```
+
+Use this image to make SD cards for the other Pis.
